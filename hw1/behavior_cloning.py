@@ -17,14 +17,15 @@ import tf_util
 import gym
 import load_policy
 
-def load_data(expert_data):
+def load_data(args):
     with open(os.path.join('expert_data', args.envname + '.pkl'), 'wb') as f:
-        data = pickle.load(expert_data, f, pickle.HIGHEST_PROTOCOL)
-        return data
+        return pickle.load(f)
 
 
 # Given expert expert data and args flags, returns a trained model
-def train_model(expert_data, args):
+def train_model(args):
+    expert_data = load_data(args)
+
     observations = expert_data['observations']
 
     actions = expert_data['actions']
@@ -81,11 +82,7 @@ def main():
                         help='Number of expert roll outs')
     args = parser.parse_args()
 
-    print('loading expert data')
-
-    expert_data = load_data(args.envname)
-
-    model = train_model(expert_data, args)
+    model = train_model(args)
 
     with tf.Session():
         tf_util.initialize()
