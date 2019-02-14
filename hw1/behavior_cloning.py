@@ -18,8 +18,9 @@ import gym
 import load_policy
 
 def load_data(args):
-    with open(os.path.join('expert_data', args.envname + '.pkl'), 'wb') as f:
-        return pickle.load(f)
+    with open(os.path.join('expert_data', args.envname + '.pkl'), 'rb') as f:
+        data = pickle.load(f.read())
+    return data
 
 
 # Given expert expert data and args flags, returns a trained model
