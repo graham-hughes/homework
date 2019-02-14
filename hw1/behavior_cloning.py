@@ -24,7 +24,7 @@ def load_data(expert_data):
 
 
 # Given expert expert data and args flags, returns a trained model
-def train_model(expert_data, args)
+def train_model(expert_data, args):
     observations = expert_data['observations']
 
     actions = expert_data['actions']
@@ -85,7 +85,7 @@ def main():
 
     expert_data = load_data(args.envname)
 
-    
+    model = train_model(expert_data, args)
 
     with tf.Session():
         tf_util.initialize()
@@ -151,9 +151,6 @@ def main():
 
         with open(os.path.join('expert_data', args.envname + '.pkl'), 'wb') as f:
             pickle.dump(expert_data, f, pickle.HIGHEST_PROTOCOL)
-
-
-def train_cloning(expert_data, ):
 
 
 if __name__ == '__main__':
