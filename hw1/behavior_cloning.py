@@ -108,7 +108,6 @@ def main():
         observations_cloning = []
         actions_cloning = []
         for i in range(args.num_rollouts):
-            print('iter', i)
             obs = env.reset()
             done = False
             totalr = 0.
@@ -122,7 +121,6 @@ def main():
                 steps += 1
                 if args.render:
                     env.render()
-                if steps % 100 == 0: print("%i/%i"%(steps, max_steps))
                 if steps >= max_steps:
                     break
             returns_expert.append(totalr)
@@ -149,9 +147,12 @@ def main():
 
             returns_cloning.append(totalr)
 
-        print('returns', returns)
-        print('mean return', np.mean(returns))
-        print('std of return', np.std(returns))
+        print('returns_expert', returns_expert)
+        print('mean return_expert', np.mean(returns_expert))
+        print('std of return_expert', np.std(returns_expert))
+        print('returns_cloning', returns_cloning)
+        print('mean returns_cloning', np.mean(returns_cloning))
+        print('std of returns_cloning', np.std(returns_cloning))
 
         expert_data = {'observations': np.array(observations),
                        'actions': np.array(actions)}
