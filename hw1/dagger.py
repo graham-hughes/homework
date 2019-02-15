@@ -82,7 +82,7 @@ def main():
 
     expert_data = load_data(args)
     observations = expert_data['observations']
-    observations = expert_data['actions']
+    actions = expert_data['actions']
 
     mean_returns = []
     standard_deviations = []
