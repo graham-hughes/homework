@@ -143,7 +143,7 @@ def main():
         new_observations = np.array(new_observations)
         new_actions = np.array(new_actions)
 
-        new_observations = new_observations.reshape((new_observations.shape[0], obs_data.shape[1]))
+        new_observations = new_observations.reshape((new_observations.shape[0], observations.shape[1]))
         observations = np.concatenate((observations, new_observations))
         actions = np.concatenate((actions, new_actions))
 
