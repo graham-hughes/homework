@@ -131,7 +131,7 @@ def main():
                         env.render()
                     if steps >= max_steps:
                         break
-                returns_expert.append(totalr)
+                mean_returns.append(totalr)
 
             print('returns', returns)
             print('mean return', np.mean(returns))
@@ -140,9 +140,12 @@ def main():
             mean_returns.append(np.mean(returns))
             standard_deviations.append(np.std(returns))
 
+        new_observations = np.array(new_observations)
+        new_actions = np.array(new_actions)
+
         new_observations = new_observations.reshape((new_observations.shape[0], obs_data.shape[1]))
         observations = np.concatenate((observations, new_observations))
-        actions = np.concatenate((actions, new_exp_actions))
+        actions = np.concatenate((actions, new_actions))
 
     print(mean_returns)
     print(standard_deviations)
