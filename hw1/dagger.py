@@ -3,8 +3,7 @@
 """
 Code to load an expert policy and generate roll-out data for behavioral cloning.
 Example usage:
-    python behavior_cloning.py experts/Humanoid-v1.pkl Humanoid-v1 --render \
-            --num_rollouts 20
+    python dagger.py experts/Humanoid-v2.pkl Humanoid-v2 --num_rollouts 20
 
 Author of this script and included expert policies: Jonathan Ho (hoj@openai.com)
 """
@@ -110,27 +109,51 @@ def main():
             new_observations = []
             new_actions = []
 
+            # for i in range(args.num_rollouts):
+            #     obs = env.reset()
+            #     done = False
+            #     totalr = 0.
+            #     steps = 0
+            #     while not done:
+            #         obs = np.array(obs)
+            #         expert_action = policy_fn(obs[None,:])
+            #         obs = np.expand_dims(obs, 0)
+            #         action = (model.predict(obs, batch_size=64, verbose=0))
+
+            #         new_observations.append(obs)
+            #         new_actions.append(action)
+            #         obs, r, done, _ = env.step(action)
+
+            #         totalr += r
+            #         steps += 1
+            #         if args.render:
+            #             env.render()
+            #         if steps >= max_steps:
+            #             break
+            #     mean_returns.append(totalr)
+
             for i in range(args.num_rollouts):
+                print('iter', i)
                 obs = env.reset()
                 done = False
                 totalr = 0.
                 steps = 0
                 while not done:
-                    obs = np.array(obs)
                     expert_action = policy_fn(obs[None,:])
                     obs = np.expand_dims(obs, 0)
                     action = (model.predict(obs, batch_size=64, verbose=0))
 
                     new_observations.append(obs)
-                    new_actions.append(action)
+                    new_actions.append(expert_action)
                     obs, r, done, _ = env.step(action)
-
                     totalr += r
                     steps += 1
                     if args.render:
                         env.render()
+                    if steps % 100 == 0: print("%i/%i"%(steps, max_steps))
                     if steps >= max_steps:
                         break
+
                 mean_returns.append(totalr)
 
             print('returns', returns)

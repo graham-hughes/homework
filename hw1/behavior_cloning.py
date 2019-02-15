@@ -56,18 +56,6 @@ def train_model(args):
 
     return model
 
-def predict(model, data):
-    return model.predict(
-        data,
-        batch_size=None,
-        verbose=0,
-        steps=None,
-        max_queue_size=10,
-        workers=1,
-        use_multiprocessing=False
-    )
-
-
 
 def main():
     import argparse
