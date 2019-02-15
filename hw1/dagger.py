@@ -111,29 +111,6 @@ def main():
             new_observations = []
             new_actions = []
 
-            # for i in range(args.num_rollouts):
-            #     obs = env.reset()
-            #     done = False
-            #     totalr = 0.
-            #     steps = 0
-            #     while not done:
-            #         obs = np.array(obs)
-            #         expert_action = policy_fn(obs[None,:])
-            #         obs = np.expand_dims(obs, 0)
-            #         action = (model.predict(obs, batch_size=64, verbose=0))
-
-            #         new_observations.append(obs)
-            #         new_actions.append(action)
-            #         obs, r, done, _ = env.step(action)
-
-            #         totalr += r
-            #         steps += 1
-            #         if args.render:
-            #             env.render()
-            #         if steps >= max_steps:
-            #             break
-            #     mean_returns.append(totalr)
-
             for i in range(args.num_rollouts):
                 print('iter', i)
                 obs = env.reset()
@@ -156,7 +133,7 @@ def main():
                     if steps >= max_steps:
                         break
 
-                mean_returns.append(totalr)
+                returns.append(totalr)
 
             print('returns', returns)
             print('mean return', np.mean(returns))
