@@ -18,7 +18,7 @@ import gym
 import load_policy
 import sklearn
 import sklearn.model_selection
-
+import tensorflow.keras.optimizers
 def load_data(args):
     with open(os.path.join('expert_data', args.envname + '.pkl'), 'rb') as f:
         data = pickle.load(f)
@@ -33,26 +33,22 @@ def train_model(args):
 
     actions = expert_data['actions']
     actions_size = len(actions[0])
-
+    
+    print(observations.shape)
+    print(actions.shape)
 
     X_train, X_valid, y_train, y_valid = sklearn.model_selection.train_test_split(observations, actions, test_size=args.test_size, random_state=0)
 
     model = tf.keras.Sequential([
-      tf.keras.layers.Dense(observation_size, activation=tf.nn.relu, input_shape=(observations.shape[1],)),  # input shape required
+      tf.keras.layers.Dense(10, activation=tf.nn.relu, input_shape=(observations.shape[1],)),  # input shape required
       tf.keras.layers.Dense(10, activation=tf.nn.relu),
       tf.keras.layers.Dense(actions_size)
     ])
 
-    model.compile(loss='mean_squared_error', optimizer=tf.optimizers.Adam(lr=args.learning_rate))
+    model.compile(loss='mean_squared_error', optimizer=tf.keras.optimizers.Adam(lr=args.learning_rate))
 
-    model.fit_generator(batch_generator(args.data_dir, X_train, y_train, args.batch_size, True),
-                        args.samples_per_epoch,
-                        args.nb_epoch,
-                        max_q_size=1,
-                        validation_data=batch_generator(args.data_dir, X_valid, y_valid, args.batch_size, False),
-                        nb_val_samples=len(X_valid),
-                        callbacks=[checkpoint],
-                        verbose=1)
+    model.fit(x=X_train, y=y_train, validation_data=(y_train, y_valid), verbose=1, batch_size=args.batch_size, nb_epoch=args.nb_epoch)
+
     return model
 
 def predict(model, data):
