@@ -100,8 +100,8 @@ def main():
 
         model = fit_model(args, observations, actions, model, X_train, y_train, X_valid, y_valid)
     
-        with tf.Session():
-            tf_util.initialize()
+        with tf.Session() as sess:
+            sess.run(tf.global_variables_initializer())
 
             import gym
             env = gym.make(args.envname)
