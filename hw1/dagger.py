@@ -118,7 +118,7 @@ def main():
                 while not done:
                     obs = np.array(obs)
                     expert_action = policy_fn(obs[None,:])
-                    obs = obs.reshape(1, len(obs), 1)
+                    obs = np.expand_dims(obs, 0)
                     action = (model.predict(obs, batch_size=64, verbose=0))
 
                     new_observations.append(obs)
