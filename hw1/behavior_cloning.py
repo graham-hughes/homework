@@ -87,6 +87,10 @@ def main():
                         help='Number of expert roll outs')
     args = parser.parse_args()
 
+    print('loading and building expert policy')
+    policy_fn = load_policy.load_policy(args.expert_policy_file)
+    print('loaded and built')
+
     model = train_model(args)
 
     with tf.Session():
@@ -152,8 +156,6 @@ def main():
         expert_data = {'observations': np.array(observations),
                        'actions': np.array(actions)}
 
-        with open(os.path.join('expert_data', args.envname + '.pkl'), 'wb') as f:
-            pickle.dump(expert_data, f, pickle.HIGHEST_PROTOCOL)
 
 
 if __name__ == '__main__':
