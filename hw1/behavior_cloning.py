@@ -39,8 +39,8 @@ def train_model(args):
 
     X_train, X_valid, y_train, y_valid = sklearn.model_selection.train_test_split(observations, actions, test_size=args.test_size, random_state=0)
 
-    train_input = X_train.reshape(X_train.shape[0], obs.shape[1])
-    test_input = X_valid.reshape(X_valid.shape[0], obs.shape[1])
+    train_input = X_train.reshape(X_train.shape[0], observations.shape[1])
+    test_input = X_valid.reshape(X_valid.shape[0], observations.shape[1])
     train_output = y_train.reshape(y_train.shape[0], acts.shape[2])
     test_output = y_valid.reshape(y_valid.shape[0], acts.shape[2])
 
