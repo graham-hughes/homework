@@ -87,7 +87,7 @@ def main():
     mean_returns = []
     standard_deviations = []
 
-    model = create_model(args, observations)
+    model = create_model(args)
 
     # DAgger loop
     for i in range(5):
