@@ -142,8 +142,8 @@ def main():
             mean_returns.append(np.mean(returns))
             standard_deviations.append(np.std(returns))
 
-        new_observations = np.array(new_observations)
-        new_actions = np.array(new_actions)
+            new_observations = np.array(new_observations)
+            new_actions = np.array(new_actions)
 
         new_observations = new_observations.reshape((new_observations.shape[0], observations.shape[1]))
         observations = np.concatenate((observations, new_observations))
