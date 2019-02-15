@@ -16,6 +16,8 @@ import numpy as np
 import tf_util
 import gym
 import load_policy
+import sklearn
+import sklearn.model_selection
 
 def load_data(args):
     with open(os.path.join('expert_data', args.envname + '.pkl'), 'rb') as f:
@@ -33,7 +35,7 @@ def train_model(args):
     actions_size = len(actions[0])
 
 
-    X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=args.test_size, random_state=0)
+    X_train, X_valid, y_train, y_valid = sklearn.model_selection.train_test_split(observations, actions, test_size=args.test_size, random_state=0)
 
     model = tf.keras.Sequential([
       tf.keras.layers.Dense(observation_size, activation=tf.nn.relu, input_shape=(observations.shape[1],)),  # input shape required
