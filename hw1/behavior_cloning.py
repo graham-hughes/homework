@@ -39,6 +39,11 @@ def train_model(args):
 
     X_train, X_valid, y_train, y_valid = sklearn.model_selection.train_test_split(observations, actions, test_size=args.test_size, random_state=0)
 
+    train_input = X_train.reshape(X_train.shape[0], obs.shape[1])
+    test_input = X_valid.reshape(X_valid.shape[0], obs.shape[1])
+    train_output = y_train.reshape(y_train.shape[0], acts.shape[2])
+    test_output = y_valid.reshape(y_valid.shape[0], acts.shape[2])
+
     model = tf.keras.Sequential([
       tf.keras.layers.Dense(10, activation=tf.nn.relu, input_shape=(observations.shape[1],)),  # input shape required
       tf.keras.layers.Dense(10, activation=tf.nn.relu),
@@ -47,7 +52,7 @@ def train_model(args):
 
     model.compile(loss='mean_squared_error', optimizer=tf.keras.optimizers.Adam(lr=args.learning_rate))
 
-    model.fit(x=X_train, y=y_train, validation_data=(y_train, y_valid), verbose=1, batch_size=args.batch_size, nb_epoch=args.nb_epoch)
+    model.fit(x=train_input, y=train_output, validation_data=(test_input, test_output), verbose=1, batch_size=args.batch_size, nb_epoch=args.nb_epoch)
 
     return model
 
@@ -125,7 +130,8 @@ def main():
             totalr = 0.
             steps = 0
             while not done:
-                action = model(obs[None,:])
+                obs = np.expand_dims(obs, 0)
+                action = (model.predict(obs, batch_size=64, verbose=0))
                 observations_cloning.append(obs)
                 actions_cloning.append(action)
                 obs, r, done, _ = env.step(action)
