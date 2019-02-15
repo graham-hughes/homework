@@ -154,9 +154,6 @@ def main():
         print('mean returns_cloning', np.mean(returns_cloning))
         print('std of returns_cloning', np.std(returns_cloning))
 
-        expert_data = {'observations': np.array(observations),
-                       'actions': np.array(actions)}
-
 
 
 if __name__ == '__main__':
