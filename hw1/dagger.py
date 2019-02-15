@@ -17,7 +17,9 @@ import gym
 import load_policy
 import sklearn
 import sklearn.model_selection
-import tensorflow.keras.optimizers
+from keras.models import Sequential, load_model
+from keras.layers import Dense, Dropout, Activation, Flatten, Reshape
+
 def load_data(args):
     with open(os.path.join('expert_data', args.envname + '.pkl'), 'rb') as f:
         data = pickle.load(f)
@@ -38,13 +40,13 @@ def create_model(args):
 
     X_train, X_valid, y_train, y_valid = sklearn.model_selection.train_test_split(observations, actions, test_size=args.test_size, random_state=0)
 
-    model = tf.keras.Sequential([
-      tf.keras.layers.Dense(10, activation=tf.nn.relu, input_shape=(observations.shape[1],)),  # input shape required
-      tf.keras.layers.Dense(10, activation=tf.nn.relu),
-      tf.keras.layers.Dense(actions.shape[2], activation='linear')
+    model = Sequential([
+      Dense(10, activation=tf.nn.relu, input_shape=(observations.shape[1],)),  # input shape required
+      Dense(10, activation=tf.nn.relu),
+      Dense(actions.shape[2], activation='linear')
     ])
 
-    model.compile(loss='mean_squared_error', optimizer=tf.keras.optimizers.Adam(lr=args.learning_rate))
+    model.compile(loss='msle', optimizer='adam', metrics=['accuracy'])
 
     return model
 
