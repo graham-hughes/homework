@@ -49,7 +49,7 @@ def create_model(args):
 
     return model
 
-def fit_model(args, observations, model, X_train, y_train, X_valid, y_valid):
+def fit_model(args, observations, actions, model, X_train, y_train, X_valid, y_valid):
     train_input = X_train.reshape(X_train.shape[0], observations.shape[1])
     test_input = X_valid.reshape(X_valid.shape[0], observations.shape[1])
     train_output = y_train.reshape(y_train.shape[0], actions.shape[2])
@@ -95,7 +95,7 @@ def main():
         # Split data
         X_train, X_valid, y_train, y_valid = sklearn.model_selection.train_test_split(observations, actions, test_size=args.test_size, random_state=0)
 
-        model = fit_model(args, observations, model, X_train, y_train, X_valid, y_valid)
+        model = fit_model(args, observations, actions, model, X_train, y_train, X_valid, y_valid)
     
         with tf.Session():
             tf_util.initialize()
