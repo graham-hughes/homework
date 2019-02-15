@@ -57,6 +57,8 @@ def fit_model(args, observations, actions, model, X_train, y_train, X_valid, y_v
 
     model.fit(x=train_input, y=train_output, validation_data=(test_input, test_output), verbose=1, batch_size=args.batch_size, nb_epoch=args.nb_epoch)
 
+    return model
+
 
 def main():
     import argparse
