@@ -80,6 +80,7 @@ def main():
     parser.add_argument('--samples_per_epoch', type=int,   default=20000)
     parser.add_argument('--nb_epoch', type=int, default=10)
     parser.add_argument('--batch_size', type=int, default=40)
+    parser.add_argument('--test_size', type=float, default=0.2)
 
     parser.add_argument('--num_rollouts', type=int, default=20,
                         help='Number of expert roll outs')
