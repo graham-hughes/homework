@@ -47,7 +47,7 @@ def train_model(args):
     model = tf.keras.Sequential([
       tf.keras.layers.Dense(10, activation=tf.nn.relu, input_shape=(observations.shape[1],)),  # input shape required
       tf.keras.layers.Dense(10, activation=tf.nn.relu),
-      tf.keras.layers.Dense(actions_size)
+      tf.keras.layers.Dense(actions.shape[2], activation='linear')
     ])
 
     model.compile(loss='mean_squared_error', optimizer=tf.keras.optimizers.Adam(lr=args.learning_rate))
