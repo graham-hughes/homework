@@ -19,7 +19,7 @@ import load_policy
 
 def load_data(args):
     with open(os.path.join('expert_data', args.envname + '.pkl'), 'rb') as f:
-        data = pickle.load(f.read())
+        data = pickle.load(f)
     return data
 
 
