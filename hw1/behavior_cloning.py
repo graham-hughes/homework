@@ -156,7 +156,7 @@ def main():
             column_labels = ['mean_expert', 'std_expert', 'mean_cloning', 'std_cloning']
 
             # Store means/stds for expert/cloning over varying rollouts
-            for num_rollouts in range (10, 60, 10):
+            for num_rollouts in range (25, 150, 25):
                 print('num_rollouts', num_rollouts)
 
                 mean_expert, std_expert, mean_cloning, std_cloning = compare_model_expert(args, policy_fn, num_rollouts, env, max_steps)
