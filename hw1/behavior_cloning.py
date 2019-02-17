@@ -51,7 +51,7 @@ def train_model(args, expert_data):
     model.compile(loss='msle', optimizer='adam', metrics=['accuracy'])
 
     # Fits model
-    model.fit(x=train_input, y=train_output, validation_data=(test_input, test_output), verbose=1, batch_size=args.batch_size, nb_epoch=args.nb_epoch)
+    model.fit(x=train_input, y=train_output, validation_data=(test_input, test_output), verbose=0, batch_size=args.batch_size, nb_epoch=args.nb_epoch)
 
     return model
 
@@ -94,7 +94,6 @@ def compare_model_expert(args, policy_fn, num_rollouts, env, max_steps):
 
     # Run the trained model and extract observations/actions/returns
     for i in range(num_rollouts):
-        print('iter', i)
         obs = env.reset()
         done = False
         totalr = 0.
@@ -162,6 +161,8 @@ def main():
 
             # Store means/stds for expert/cloning over varying rollouts
             for num_rollouts in range (10, 60, 10):
+                print('num_rollouts', num_rollouts)
+
                 mean_expert, std_expert, mean_cloning, std_cloning = compare_model_expert(args, policy_fn, num_rollouts, env, max_steps)
 
                 row_labels.append('%d rollouts' % num_rollouts)
