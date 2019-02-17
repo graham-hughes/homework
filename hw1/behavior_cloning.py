@@ -175,7 +175,7 @@ def main():
         fig.patch.set_visible(False)
         ax.axis('off')
         ax.axis('tight')
-        table = ax.table(cellText=cell_text, rowLabels=row_labels, colLabels=column_labels)
+        table = ax.table(cellText=cell_text, rowLabels=row_labels, colLabels=column_labels, loc='center')
 
         fig.tight_layout()
         plt.savefig(os.path.join('rollout_comparisons', args.envname + '.png'))
