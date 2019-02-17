@@ -164,7 +164,7 @@ def main():
         column_labels = ['mean_expert', 'std_expert', 'mean_cloning', 'std_cloning']
 
         # Store means/stds for expert/cloning over varying rollouts
-        for num_rollouts in range (5, 25, 5):
+        for num_rollouts in range (10, 60, 10):
             mean_expert, std_expert, mean_cloning, std_cloning = compare_model_expert(args, policy_fn, model, num_rollouts)
 
             row_labels.append('%d rollouts' % num_rollouts)
@@ -177,7 +177,7 @@ def main():
         ax.axis('tight')
         table = ax.table(cellText=cell_text, rowLabels=row_labels, colLabels=column_labels, loc='center')
 
-        fig.tight_layout()
+        fig.tight_layout(pad=5)
         plt.savefig(os.path.join('rollout_comparisons', args.envname + '.png'))
 
 
