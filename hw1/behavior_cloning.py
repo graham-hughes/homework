@@ -169,9 +169,15 @@ def main():
 
             row_labels.append('%d rollouts' % num_rollouts)
             cell_text.append([str(mean_expert), str(std_expert), str(mean_cloning), str(std_cloning)])
+        
+        fig, ax = plt.subplots()
 
-        table = plt.table(cellText=cell_text, rowLabels=row_labels, colLabels=column_labels)
+        fig.patch.set_visible(False)
+        ax.axis('off')
+        ax.axis('tight')
+        table = ax.table(cellText=cell_text, rowLabels=row_labels, colLabels=column_labels)
 
+        fig.tight_layout()
         plt.savefig(os.path.join('rollout_comparisons', args.envname + '.png'))
 
 
