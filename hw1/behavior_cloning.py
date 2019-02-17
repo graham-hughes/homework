@@ -19,6 +19,9 @@ import load_policy
 import sklearn
 import sklearn.model_selection
 import tensorflow.keras.optimizers
+import matplotlib
+import matplotlib.pyplot as plt
+
 def load_data(args):
     with open(os.path.join('expert_data', args.envname + '.pkl'), 'rb') as f:
         data = pickle.load(f)
@@ -32,11 +35,11 @@ def train_model(args):
     observations = expert_data['observations']
 
     actions = expert_data['actions']
-    actions_size = len(actions[0])
     
     print(observations.shape)
     print(actions.shape)
 
+    # Splits observations/actions into train/test
     X_train, X_valid, y_train, y_valid = sklearn.model_selection.train_test_split(observations, actions, test_size=args.test_size, random_state=0)
 
     train_input = X_train.reshape(X_train.shape[0], observations.shape[1])
@@ -45,41 +48,22 @@ def train_model(args):
     test_output = y_valid.reshape(y_valid.shape[0], actions.shape[2])
 
     model = tf.keras.Sequential([
-      tf.keras.layers.Dense(10, activation=tf.nn.relu, input_shape=(observations.shape[1],)),  # input shape required
-      tf.keras.layers.Dense(10, activation=tf.nn.relu),
+      tf.keras.layers.Dense(64, activation=tf.nn.relu, input_shape=(observations.shape[1],)),  # input shape required
+      tf.keras.layers.Dense(32, activation=tf.nn.relu),
       tf.keras.layers.Dense(actions.shape[2], activation='linear')
     ])
 
-    model.compile(loss='mean_squared_error', optimizer=tf.keras.optimizers.Adam(lr=args.learning_rate))
+    # Compile model with mean squared log loss and Adam optimizer, using accuracy for loss metric
+    model.compile(loss='msle', optimizer='adam', metrics=['accuracy'])
 
+    # Fits model
     model.fit(x=train_input, y=train_output, validation_data=(test_input, test_output), verbose=1, batch_size=args.batch_size, nb_epoch=args.nb_epoch)
 
     return model
 
-
-def main():
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument('expert_policy_file', type=str) # Expert policy
-    parser.add_argument('envname', type=str) # Task
-    parser.add_argument('--render', action='store_true')
-    parser.add_argument("--max_timesteps", type=int)
-
-    parser.add_argument("--learning_rate", type=float, default=1.0e-4)
-    parser.add_argument('--samples_per_epoch', type=int,   default=20000)
-    parser.add_argument('--nb_epoch', type=int, default=10)
-    parser.add_argument('--batch_size', type=int, default=40)
-    parser.add_argument('--test_size', type=float, default=0.2)
-
-    parser.add_argument('--num_rollouts', type=int, default=20,
-                        help='Number of expert roll outs')
-    args = parser.parse_args()
-
-    print('loading and building expert policy')
-    policy_fn = load_policy.load_policy(args.expert_policy_file)
-    print('loaded and built')
-
-    model = train_model(args)
+# Takes in necessary args/policy_fn/model, along with:
+# number of rollouts and hyperparameter (defaults available), returns mean_expert, std_expert, mean_cloning, std_cloning
+def compare_model_expert(args, policy_fn, model, num_rollouts):
 
     with tf.Session():
         tf_util.initialize()
@@ -95,6 +79,8 @@ def main():
         returns_cloning = []
         observations_cloning = []
         actions_cloning = []
+
+        # Run the expert policy and extract observations/actions/returns
         for i in range(args.num_rollouts):
             obs = env.reset()
             done = False
@@ -113,6 +99,7 @@ def main():
                     break
             returns_expert.append(totalr)
 
+        # Run the trained model and extract observations/actions/returns
         for i in range(args.num_rollouts):
             print('iter', i)
             obs = env.reset()
@@ -135,12 +122,57 @@ def main():
 
             returns_cloning.append(totalr)
 
-        print('returns_expert', returns_expert)
-        print('mean return_expert', np.mean(returns_expert))
-        print('std of return_expert', np.std(returns_expert))
-        print('returns_cloning', returns_cloning)
-        print('mean returns_cloning', np.mean(returns_cloning))
-        print('std of returns_cloning', np.std(returns_cloning))
+        mean_expert = np.mean(returns_expert)
+        std_expert = np.std(returns_expert)
+        mean_cloning = np.mean(returns_cloning)
+        std_cloning = np.std(returns_cloning)
+
+        return mean_expert, std_expert, mean_cloning, std_cloning
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('expert_policy_file', type=str) # Expert policy
+    parser.add_argument('envname', type=str) # Task
+    parser.add_argument('--render', action='store_true')
+    parser.add_argument("--max_timesteps", type=int)
+
+    parser.add_argument("--learning_rate", type=float, default=1.0e-4)
+    parser.add_argument('--samples_per_epoch', type=int,   default=20000)
+    parser.add_argument('--nb_epoch', type=int, default=10)
+    parser.add_argument('--batch_size', type=int, default=40)
+    parser.add_argument('--test_size', type=float, default=0.2)
+
+    parser.add_argument('--num_rollouts', type=int, default=20,
+                        help='Number of expert roll outs')
+
+    parser.add_argument('--compare_rollouts', type=bool, default=False)
+    parser.add_argument('--compare_hyperparameter', type=bool, default=False)
+
+    args = parser.parse_args()
+
+    # Preload expert policy function
+    policy_fn = load_policy.load_policy(args.expert_policy_file)
+
+    # Pretrain model
+    model = train_model(args)
+
+    if (args.compare_rollouts)
+
+        row_labels = []
+        row_text = []
+        column_labels = ['mean_expert', 'std_expert', 'mean_cloning', 'std_cloning']
+
+        # Store means/stds for expert/cloning over varying rollouts
+        for num_rollouts in range (5, 25, 5):
+            mean_expert, std_expert, mean_cloning, std_cloning = compare_model_expert(args, policy_fn, model, num_rollouts)
+
+            row_labels = '%d rollouts' % num_rollouts
+            cell_text.append([str(mean_expert), str(std_expert), str(mean_cloning), str(std_cloning)])
+
+        table = plt.table(cellText=cell_text, rowLabels=row_labels, colLabels=column_labels)
+
+        plt.savefig(os.path.join('rollout_comparisons', args.envname + '.png'))
 
 
 
