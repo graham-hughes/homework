@@ -3,8 +3,7 @@
 """
 Code to load an expert policy and generate roll-out data for behavioral cloning.
 Example usage:
-    python behavior_cloning.py experts/Humanoid-v1.pkl Humanoid-v1 --render \
-            --num_rollouts 20
+    python behavior_cloning.py experts/Humanoid-v2.pkl Humanoid-v2 --compare_rollouts True
 
 Author of this script and included expert policies: Jonathan Ho (hoj@openai.com)
 """
@@ -20,6 +19,7 @@ import sklearn
 import sklearn.model_selection
 import tensorflow.keras.optimizers
 import matplotlib
+matplotlib.use('agg')
 import matplotlib.pyplot as plt
 
 def load_data(args):
@@ -65,8 +65,8 @@ def train_model(args):
 # number of rollouts and hyperparameter (defaults available), returns mean_expert, std_expert, mean_cloning, std_cloning
 def compare_model_expert(args, policy_fn, model, num_rollouts):
 
-    with tf.Session():
-        tf_util.initialize()
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
 
         import gym
         env = gym.make(args.envname)
@@ -81,7 +81,7 @@ def compare_model_expert(args, policy_fn, model, num_rollouts):
         actions_cloning = []
 
         # Run the expert policy and extract observations/actions/returns
-        for i in range(args.num_rollouts):
+        for i in range(num_rollouts):
             obs = env.reset()
             done = False
             totalr = 0.
@@ -100,7 +100,7 @@ def compare_model_expert(args, policy_fn, model, num_rollouts):
             returns_expert.append(totalr)
 
         # Run the trained model and extract observations/actions/returns
-        for i in range(args.num_rollouts):
+        for i in range(num_rollouts):
             print('iter', i)
             obs = env.reset()
             done = False
@@ -157,17 +157,17 @@ def main():
     # Pretrain model
     model = train_model(args)
 
-    if (args.compare_rollouts)
+    if (args.compare_rollouts):
 
         row_labels = []
-        row_text = []
+        cell_text = []
         column_labels = ['mean_expert', 'std_expert', 'mean_cloning', 'std_cloning']
 
         # Store means/stds for expert/cloning over varying rollouts
         for num_rollouts in range (5, 25, 5):
             mean_expert, std_expert, mean_cloning, std_cloning = compare_model_expert(args, policy_fn, model, num_rollouts)
 
-            row_labels = '%d rollouts' % num_rollouts
+            row_labels.append('%d rollouts' % num_rollouts)
             cell_text.append([str(mean_expert), str(std_expert), str(mean_cloning), str(std_cloning)])
 
         table = plt.table(cellText=cell_text, rowLabels=row_labels, colLabels=column_labels)
