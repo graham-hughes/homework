@@ -63,71 +63,64 @@ def train_model(args):
 
 # Takes in necessary args/policy_fn/model, along with:
 # number of rollouts and hyperparameter (defaults available), returns mean_expert, std_expert, mean_cloning, std_cloning
-def compare_model_expert(args, policy_fn, model, num_rollouts):
+def compare_model_expert(args, policy_fn, model, num_rollouts, env, max_steps):
 
-    with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
+    returns_expert = []
+    observations_expert = []
+    actions_expert = []
 
-        import gym
-        env = gym.make(args.envname)
-        max_steps = args.max_timesteps or env.spec.timestep_limit
+    returns_cloning = []
+    observations_cloning = []
+    actions_cloning = []
 
-        returns_expert = []
-        observations_expert = []
-        actions_expert = []
+    # Run the expert policy and extract observations/actions/returns
+    for i in range(num_rollouts):
+        obs = env.reset()
+        done = False
+        totalr = 0.
+        steps = 0
+        while not done:
+            action = policy_fn(obs[None,:])
+            observations_expert.append(obs)
+            actions_expert.append(action)
+            obs, r, done, _ = env.step(action)
+            totalr += r
+            steps += 1
+            if args.render:
+                env.render()
+            if steps >= max_steps:
+                break
+        returns_expert.append(totalr)
 
-        returns_cloning = []
-        observations_cloning = []
-        actions_cloning = []
+    # Run the trained model and extract observations/actions/returns
+    for i in range(num_rollouts):
+        print('iter', i)
+        obs = env.reset()
+        done = False
+        totalr = 0.
+        steps = 0
+        while not done:
+            obs = np.expand_dims(obs, 0)
+            action = (model.predict(obs, batch_size=64, verbose=0))
+            observations_cloning.append(obs)
+            actions_cloning.append(action)
+            obs, r, done, _ = env.step(action)
+            totalr += r
+            steps += 1
+            if args.render:
+                env.render()
+            if steps % 100 == 0: print("%i/%i"%(steps, max_steps))
+            if steps >= max_steps:
+                break
 
-        # Run the expert policy and extract observations/actions/returns
-        for i in range(num_rollouts):
-            obs = env.reset()
-            done = False
-            totalr = 0.
-            steps = 0
-            while not done:
-                action = policy_fn(obs[None,:])
-                observations_expert.append(obs)
-                actions_expert.append(action)
-                obs, r, done, _ = env.step(action)
-                totalr += r
-                steps += 1
-                if args.render:
-                    env.render()
-                if steps >= max_steps:
-                    break
-            returns_expert.append(totalr)
+        returns_cloning.append(totalr)
 
-        # Run the trained model and extract observations/actions/returns
-        for i in range(num_rollouts):
-            print('iter', i)
-            obs = env.reset()
-            done = False
-            totalr = 0.
-            steps = 0
-            while not done:
-                obs = np.expand_dims(obs, 0)
-                action = (model.predict(obs, batch_size=64, verbose=0))
-                observations_cloning.append(obs)
-                actions_cloning.append(action)
-                obs, r, done, _ = env.step(action)
-                totalr += r
-                steps += 1
-                if args.render:
-                    env.render()
-                if steps % 100 == 0: print("%i/%i"%(steps, max_steps))
-                if steps >= max_steps:
-                    break
+    mean_expert = np.mean(returns_expert)
+    std_expert = np.std(returns_expert)
+    mean_cloning = np.mean(returns_cloning)
+    std_cloning = np.std(returns_cloning)
 
-            returns_cloning.append(totalr)
-
-        mean_expert = np.mean(returns_expert)
-        std_expert = np.std(returns_expert)
-        mean_cloning = np.mean(returns_cloning)
-        std_cloning = np.std(returns_cloning)
-
-        return mean_expert, std_expert, mean_cloning, std_cloning
+    return mean_expert, std_expert, mean_cloning, std_cloning
 
 def main():
     import argparse
@@ -157,28 +150,35 @@ def main():
     # Pretrain model
     model = train_model(args)
 
-    if (args.compare_rollouts):
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
 
-        row_labels = []
-        cell_text = []
-        column_labels = ['mean_expert', 'std_expert', 'mean_cloning', 'std_cloning']
+        import gym
+        env = gym.make(args.envname)
+        max_steps = args.max_timesteps or env.spec.timestep_limit
 
-        # Store means/stds for expert/cloning over varying rollouts
-        for num_rollouts in range (10, 60, 10):
-            mean_expert, std_expert, mean_cloning, std_cloning = compare_model_expert(args, policy_fn, model, num_rollouts)
+        if (args.compare_rollouts):
 
-            row_labels.append('%d rollouts' % num_rollouts)
-            cell_text.append([str(mean_expert), str(std_expert), str(mean_cloning), str(std_cloning)])
-        
-        fig, ax = plt.subplots()
+            row_labels = []
+            cell_text = []
+            column_labels = ['mean_expert', 'std_expert', 'mean_cloning', 'std_cloning']
 
-        fig.patch.set_visible(False)
-        ax.axis('off')
-        ax.axis('tight')
-        table = ax.table(cellText=cell_text, rowLabels=row_labels, colLabels=column_labels, loc='center')
+            # Store means/stds for expert/cloning over varying rollouts
+            for num_rollouts in range (10, 60, 10):
+                mean_expert, std_expert, mean_cloning, std_cloning = compare_model_expert(args, policy_fn, model, num_rollouts, env, max_steps)
 
-        fig.tight_layout(pad=5)
-        plt.savefig(os.path.join('rollout_comparisons', args.envname + '.png'))
+                row_labels.append('%d rollouts' % num_rollouts)
+                cell_text.append([str(mean_expert), str(std_expert), str(mean_cloning), str(std_cloning)])
+            
+            fig, ax = plt.subplots()
+
+            fig.patch.set_visible(False)
+            ax.axis('off')
+            ax.axis('tight')
+            table = ax.table(cellText=cell_text, rowLabels=row_labels, colLabels=column_labels, loc='center')
+
+            fig.tight_layout(pad=5)
+            plt.savefig(fname=os.path.join('rollout_comparisons', args.envname + '.png'), dpi=300)
 
 
 
