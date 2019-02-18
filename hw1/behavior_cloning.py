@@ -48,7 +48,7 @@ def train_model(args, expert_data):
     model.compile(loss='msle', optimizer='adam', metrics=['accuracy'])
 
     # Fits model
-    model.fit(x=train_input, y=train_output, validation_data=(test_input, test_output), verbose=0, batch_size=args.batch_size, nb_epoch=args.nb_epoch)
+    model.fit(x=train_input, y=train_output, validation_data=(test_input, test_output), verbose=0, batch_size=args.batch_size, epoch=args.nb_epoch)
 
     return model
 
@@ -173,6 +173,37 @@ def main():
 
             fig.tight_layout(pad=5)
             plt.savefig(fname=os.path.join('rollout_comparisons', args.envname + '.png'), dpi=300)
+
+        # Compares results for various nb_epoch values
+        # Note: this reuses compare_model_expert and unecessarily re-generates expert data at each iteration
+        # This can be refactored for performance if needed
+        if (args.compare_hyperparameter):
+
+            row_labels = []
+            cell_text = []
+            column_labels = ['mean_expert', 'std_expert', 'mean_cloning', 'std_cloning']
+
+            # Store means/stds for expert/cloning over varying nb_epoch
+            for nb_epoch in range (5, 30, 5):
+                print('nb_epoch', nb_epoch)
+
+                # This is later passed into train_model, which trains for args.nb_epoch epochs
+                args.nb_epoch = nb_epoch
+
+                mean_expert, std_expert, mean_cloning, std_cloning = compare_model_expert(args, policy_fn, args.num_rollouts, env, max_steps)
+
+                row_labels.append('%d epochs' % nb_epoch)
+                cell_text.append([str(mean_expert), str(std_expert), str(mean_cloning), str(std_cloning)])
+
+            fig, ax = plt.subplots()
+
+            fig.patch.set_visible(False)
+            ax.axis('off')
+            ax.axis('tight')
+            table = ax.table(cellText=cell_text, rowLabels=row_labels, colLabels=column_labels, loc='center')
+
+            fig.tight_layout(pad=5)
+            plt.savefig(fname=os.path.join('epoch_comparisons', args.envname + '.png'), dpi=300)
 
 
 
