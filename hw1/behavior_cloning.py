@@ -48,7 +48,7 @@ def train_model(args, expert_data):
     model.compile(loss='msle', optimizer='adam', metrics=['accuracy'])
 
     # Fits model
-    model.fit(x=train_input, y=train_output, validation_data=(test_input, test_output), verbose=0, batch_size=args.batch_size, epoch=args.nb_epoch)
+    model.fit(x=train_input, y=train_output, validation_data=(test_input, test_output), verbose=0, batch_size=args.batch_size, epochs=args.nb_epoch)
 
     return model
 
