@@ -89,9 +89,7 @@ def main():
                         help='Number of expert roll outs')
     args = parser.parse_args()
 
-    print('loading and building expert policy')
     policy_fn = load_policy.load_policy(args.expert_policy_file)
-    print('loaded and built')
 
     expert_data = load_data(args)
     observations = expert_data['observations']
@@ -113,6 +111,8 @@ def main():
 
         # DAgger loop
         for i in range(5):
+            print('dagger_itter', i)
+
             dagger_iters.append(i)
 
             model = train_model(args, expert_data)
@@ -124,8 +124,7 @@ def main():
             returns_expert = []
 
             # Run the re-trained model
-            for i in range(args.num_rollouts):
-                print('iter', i)
+            for j in range(args.num_rollouts):
                 obs = env.reset()
                 done = False
                 totalr = 0.
@@ -143,7 +142,6 @@ def main():
                     steps += 1
                     if args.render:
                         env.render()
-                    if steps % 100 == 0: print("%i/%i"%(steps, max_steps))
                     if steps >= max_steps:
                         break
 
