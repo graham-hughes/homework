@@ -19,6 +19,10 @@ import sklearn
 import sklearn.model_selection
 from keras.models import Sequential, load_model
 from keras.layers import Dense, Dropout, Activation, Flatten, Reshape
+from behavior_cloning import compare_model_expert
+import matplotlib
+matplotlib.use('agg')
+import matplotlib.pyplot as plt
 
 def load_data(args):
     with open(os.path.join('expert_data', args.envname + '.pkl'), 'rb') as f:
@@ -51,7 +55,7 @@ def train_model(args, expert_data):
     model.compile(loss='msle', optimizer='adam', metrics=['accuracy'])
 
     # Fits model
-    model.fit(x=train_input, y=train_output, validation_data=(test_input, test_output), verbose=0, batch_size=args.batch_size, epoch=args.nb_epoch)
+    model.fit(x=train_input, y=train_output, validation_data=(test_input, test_output), verbose=0, batch_size=args.batch_size, epochs=args.nb_epoch)
 
     return model
 
@@ -163,8 +167,8 @@ def main():
 
         fig, ax = plt.subplots()
         ax.errorbar(x=dagger_iters, y=mean_returns, yerr=standard_deviations, color='red') # Performance of dagger
-        ax.errorbar(x=dagger_iters, y=mean_expert, yerr=std_expert, color='green') # Performance of expert
-        ax.errorbar(x=dagger_iters, y=mean_cloning, yerr=std_cloning, color='blue') # Performance of behavioral cloning
+        ax.errorbar(x=dagger_iters, y=[mean_expert for i in dagger_iters], yerr=std_expert, color='green') # Performance of expert
+        ax.errorbar(x=dagger_iters, y=[mean_cloning for i in dagger_iters], yerr=std_cloning, color='blue') # Performance of behavioral cloning
         fig.tight_layout(pad=5)
 
         plt.savefig(fname=os.path.join('dagger_comparisons', args.envname + '.png'), dpi=300)
