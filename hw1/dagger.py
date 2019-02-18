@@ -27,38 +27,44 @@ def load_data(args):
 
 
 # Given expert expert data and args flags, returns a trained model
-def create_model(args):
-    expert_data = load_data(args)
+def train_model(args, expert_data):
 
     observations = expert_data['observations']
 
     actions = expert_data['actions']
-    actions_size = len(actions[0])
-    
-    print(observations.shape)
-    print(actions.shape)
 
+    # Splits observations/actions into train/test
     X_train, X_valid, y_train, y_valid = sklearn.model_selection.train_test_split(observations, actions, test_size=args.test_size, random_state=0)
 
-    model = Sequential([
-      Dense(10, activation=tf.nn.relu, input_shape=(observations.shape[1],)),  # input shape required
-      Dense(10, activation=tf.nn.relu),
-      Dense(actions.shape[2], activation='linear')
-    ])
-
-    model.compile(loss='msle', optimizer='adam', metrics=['accuracy'])
-
-    return model
-
-def fit_model(args, observations, actions, model, X_train, y_train, X_valid, y_valid):
     train_input = X_train.reshape(X_train.shape[0], observations.shape[1])
     test_input = X_valid.reshape(X_valid.shape[0], observations.shape[1])
     train_output = y_train.reshape(y_train.shape[0], actions.shape[2])
     test_output = y_valid.reshape(y_valid.shape[0], actions.shape[2])
 
-    model.fit(x=train_input, y=train_output, validation_data=(test_input, test_output), verbose=1, batch_size=args.batch_size, nb_epoch=args.nb_epoch)
+    model = tf.keras.Sequential([
+      tf.keras.layers.Dense(64, activation=tf.nn.relu, input_shape=(observations.shape[1],)),  # input shape required
+      tf.keras.layers.Dense(32, activation=tf.nn.relu),
+      tf.keras.layers.Dense(actions.shape[2], activation='linear')
+    ])
+
+    # Compile model with mean squared log loss and Adam optimizer, using accuracy for loss metric
+    model.compile(loss='msle', optimizer='adam', metrics=['accuracy'])
+
+    # Fits model
+    model.fit(x=train_input, y=train_output, validation_data=(test_input, test_output), verbose=0, batch_size=args.batch_size, epoch=args.nb_epoch)
 
     return model
+
+
+# def fit_model(args, observations, actions, model, X_train, y_train, X_valid, y_valid):
+#     train_input = X_train.reshape(X_train.shape[0], observations.shape[1])
+#     test_input = X_valid.reshape(X_valid.shape[0], observations.shape[1])
+#     train_output = y_train.reshape(y_train.shape[0], actions.shape[2])
+#     test_output = y_valid.reshape(y_valid.shape[0], actions.shape[2])
+
+#     model.fit(x=train_input, y=train_output, validation_data=(test_input, test_output), verbose=1, batch_size=args.batch_size, nb_epoch=args.nb_epoch)
+
+#     return model
 
 
 def main():
@@ -90,27 +96,30 @@ def main():
     mean_returns = []
     standard_deviations = []
 
-    model = create_model(args)
+    mean_returns_expert = []
+    standard_deviations_expert = []
+    dagger_iters = []
 
-    # DAgger loop
-    for i in range(5):
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
 
-        # Split data
-        X_train, X_valid, y_train, y_valid = sklearn.model_selection.train_test_split(observations, actions, test_size=args.test_size, random_state=0)
+        import gym
+        env = gym.make(args.envname)
+        max_steps = args.max_timesteps or env.spec.timestep_limit
 
-        model = fit_model(args, observations, actions, model, X_train, y_train, X_valid, y_valid)
-    
-        with tf.Session() as sess:
-            sess.run(tf.global_variables_initializer())
+        # DAgger loop
+        for i in range(5):
+            dagger_iters.append(i)
 
-            import gym
-            env = gym.make(args.envname)
-            max_steps = args.max_timesteps or env.spec.timestep_limit
+            model = train_model(args, expert_data)
 
             returns = []
             new_observations = []
             new_actions = []
 
+            returns_expert = []
+
+            # Run the re-trained model
             for i in range(args.num_rollouts):
                 print('iter', i)
                 obs = env.reset()
@@ -119,6 +128,7 @@ def main():
                 steps = 0
                 while not done:
                     expert_action = policy_fn(obs[None,:])
+
                     obs = np.expand_dims(obs, 0)
                     action = (model.predict(obs, batch_size=64, verbose=0))
 
@@ -135,23 +145,29 @@ def main():
 
                 returns.append(totalr)
 
-            print('returns', returns)
-            print('mean return', np.mean(returns))
-            print('std of return', np.std(returns))
-
             mean_returns.append(np.mean(returns))
             standard_deviations.append(np.std(returns))
 
             new_observations = np.array(new_observations)
             new_actions = np.array(new_actions)
 
-        new_observations = new_observations.reshape((new_observations.shape[0], observations.shape[1]))
-        observations = np.concatenate((observations, new_observations))
-        actions = np.concatenate((actions, new_actions))
+            new_observations = new_observations.reshape((new_observations.shape[0], observations.shape[1]))
+            observations = np.concatenate((observations, new_observations))
+            actions = np.concatenate((actions, new_actions))
 
-    print(mean_returns)
-    print(standard_deviations)
+            expert_data = {'observations': np.array(observations),
+                   'actions': np.array(actions)}
 
+        # Calculates performance of expert and behavioral cloning for the same args
+        mean_expert, std_expert, mean_cloning, std_cloning = compare_model_expert(args, policy_fn, args.num_rollouts, env, max_steps)
+
+        fig, ax = plt.subplots()
+        ax.errorbar(x=dagger_iters, y=mean_returns, yerr=standard_deviations, color='red') # Performance of dagger
+        ax.errorbar(x=dagger_iters, y=mean_expert, yerr=std_expert, color='green') # Performance of expert
+        ax.errorbar(x=dagger_iters, y=mean_cloning, yerr=std_cloning, color='blue') # Performance of behavioral cloning
+        fig.tight_layout(pad=5)
+
+        plt.savefig(fname=os.path.join('dagger_comparisons', args.envname + '.png'), dpi=300)
 
 if __name__ == '__main__':
     main()
