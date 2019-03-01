@@ -33,7 +33,8 @@ class QLearner(object):
     grad_norm_clipping=10,
     rew_file=None,
     double_q=True,
-    lander=False):
+    lander=False,
+    name=''):
         '''Run Deep Q-learning algorithm.
 
         You can specify your own convnet using q_func.
@@ -161,19 +162,13 @@ class QLearner(object):
         # Evaluate current and next Q values
         self.q_t = q_func(obs_t_float, self.num_actions, scope="q_func", reuse=False)
         self.q_tp1 = q_func(obs_tp1_float, self.num_actions, scope="target_q_func", reuse=False)
-        # Get current and target Q function variables
-        q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='q_func')
-        target_q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='target_q_func')
 
         if double_q:
             max_action = tf.argmax(q_func(obs_tp1_float, self.num_actions, scope="q_func", reuse=True), axis=1)
-            target_q = tf.reduce_sum(tf.multiply(self.target_q, tf.one_hot(max_action, self.num_actions)), axis=1)
+            target_q = tf.reduce_sum(tf.multiply(self.q_tp1, tf.one_hot(max_action, self.num_actions)), axis=1)
         else:
             # Gets the max value across the tensor
             target_q = tf.cast(tf.reduce_max(self.q_tp1, axis=1), tf.float32)
-
-        ## TODO: IMPLEMENT DOUBLE Q!
-        target_q = tf.cast(tf.argmax(self.q_t, axis=1), tf.float32)
 
         # y = rew_t_ph + (1 - done_mask_ph) * gamma * self.q_tp1
         y = self.rew_t_ph + tf.multiply(1.0 - self.done_mask_ph, target_q) * gamma
@@ -183,6 +178,10 @@ class QLearner(object):
 
         # Compute huber loss
         self.total_error = tf.reduce_mean(huber_loss(q_value - y))
+
+        # Get current and target Q function variables
+        q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='q_func')
+        target_q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='target_q_func')
         ######
 
         # construct optimization op (with gradient clipping)
@@ -207,7 +206,7 @@ class QLearner(object):
         ###############
         self.model_initialized = False
         self.num_param_updates = 0
-        self.mean_episode_reward            = -float('nan')
+        self.mean_episode_reward = -float('nan')
         self.best_mean_episode_reward = -float('inf')
         self.last_obs = self.env.reset()
         self.log_every_n_steps = 10000
@@ -376,13 +375,23 @@ class QLearner(object):
             with open(self.rew_file, 'wb') as f:
                 pickle.dump(episode_rewards, f, pickle.HIGHEST_PROTOCOL)
 
+            return (self.t, self.mean_episode_reward, self.best_mean_episode_reward, len(episode_rewards), self.exploration.value(self.t), self.optimizer_spec.lr_schedule.value(self.t))
+        return None
+
 def learn(*args, **kwargs):
+    name = kwargs['name']
     alg = QLearner(*args, **kwargs)
+    logs = []
     while not alg.stopping_criterion_met():
         alg.step_env()
         # at this point, the environment should have been advanced one step (and
         # reset if done was true), and self.last_obs should point to the new latest
         # observation
         alg.update_model()
-        alg.log_progress()
+        log = alg.log_progress()
+        if log: logs.append(log)
+
+    with open('%s_logs.pkl' %name, 'wb') as f:
+        pickle.dump(logs, f, pickle.HIGHEST_PROTOCOL)
+
 

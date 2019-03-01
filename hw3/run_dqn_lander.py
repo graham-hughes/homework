@@ -54,7 +54,8 @@ def lander_kwargs():
         'frame_history_len': 1,
         'target_update_freq': 3000,
         'grad_norm_clipping': 10,
-        'lander': True
+        'lander': True,
+        'name': 'lander'
     }
 
 def lander_learn(env,
